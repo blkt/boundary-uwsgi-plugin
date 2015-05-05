@@ -1,0 +1,24 @@
+{
+  "description": "Monitors uWSGI instances",
+  "icon": "statpro.png",
+  "command": "python -u boundary_uwsgi_plugin/plugin.py",
+  "metrics": [
+    "UWSGI_WORKER_RSS",
+    "UWSGI_WORKER_AVG_RT",
+    "UWSGI_WORKER_TX",
+    "UWSGI_WORKER_REQUESTS"
+  ],
+  "dashboards": [{"name": "uWSGI",
+                   "layout":
+                   "d-w=3&d-h=2&d-pad=5&d-bg=none&d-sg-cpu=0-0-2-1-t&d-sg-mem=0-0-2-1-b&d-g-UWSGI_WORKER_RSS=0-1-1-1&d-g-UWSGI_WORKER_AVG_RT=1-1-1-1&d-g-UWSGI_WORKER_TX=2-1-1-1&d-g-UWSGI_WORKER_REQUESTS=2-0-1-1&d-sg-cpu=0-0-1-1&d-sg-mem=1-0-1-1"}],
+  "paramSchema": [
+    {
+      "title": "Poll Interval",
+      "name": "uwsgi_poll_interval",
+      "description": "Interval between sends (milliseconds)",
+      "type": "integer",
+      "default": "1000",
+      "required": true
+    }
+  ]
+}

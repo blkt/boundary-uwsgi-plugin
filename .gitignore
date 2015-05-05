@@ -9,11 +9,11 @@ __pycache__/
 .Python
 env/
 build/
+cover/
 develop-eggs/
 dist/
 downloads/
 eggs/
-.eggs/
 lib/
 lib64/
 parts/
@@ -37,11 +37,10 @@ pip-delete-this-directory.txt
 htmlcov/
 .tox/
 .coverage
-.coverage.*
 .cache
 nosetests.xml
+.noseids
 coverage.xml
-*,cover
 
 # Translations
 *.mo
