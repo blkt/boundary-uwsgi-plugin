@@ -2,6 +2,7 @@ import json
 import socket
 import sys
 import time
+import traceback
 
 import logging
 log = logging.getLogger(__name__)
@@ -130,8 +131,7 @@ def main():
                 values = filter_metrics(raw_metrics, stateless_metrics, stateful_metrics)
                 report_metrics(values, appname, hostname, metrics, timestamp=timestamp)
             except:
-                pass
-                # TODO log on boundary meter logs
+                traceback.print_exc(file=sys.stderr)
         time.sleep(poll_interval)
 
 if __name__ == '__main__':
