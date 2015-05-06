@@ -11,11 +11,12 @@ HOSTNAME = socket.getfqdn()
 POLL_INTERVAL = 1000
 DEFAULT_CHUNK_SIZE = 4096
 
-DEFAULT_SOCKET_PATH = "/var/run/{appname}/stats.sock"
+# We use abstract unix sockets, so the path has to starts with a null
+# byte
+DEFAULT_SOCKET_PATH = "\0/uwsgi/{appname}/stats"
 APPS = ["cap", "cap-internal", "smweb", "smweb2", "vienna"]
 STATELESS = {"rss": "UWSGI_WORKER_RSS", "avg_rt": "UWSGI_WORKER_AVG_RT"}
 STATEFUL = {"tx": "UWSGI_WORKER_TX", "requests": "UWSGI_WORKER_REQUESTS"}
-METRICS = dict(STATELESS).update(STATEFUL)
 
 previous_state = {}
 
@@ -121,7 +122,8 @@ def main():
     chunk_size = DEFAULT_CHUNK_SIZE
     stateless_metrics = STATELESS
     stateful_metrics = STATEFUL
-    metrics = METRICS
+    metrics = stateless_metrics.copy()
+    metrics.update(stateful_metrics)
 
     while keep_looping_p():
         for appname in apps:
