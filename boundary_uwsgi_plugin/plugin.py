@@ -18,7 +18,7 @@ APPS = ["cap", "cap-internal", "smweb", "smweb2", "vienna"]
 STATELESS = {"rss": "UWSGI_WORKER_RSS", "avg_rt": "UWSGI_WORKER_AVG_RT"}
 STATEFUL = {"tx": "UWSGI_WORKER_TX", "requests": "UWSGI_WORKER_REQUESTS"}
 
-previous_state = {}
+previous_state = {app: {} for app in APPS}
 
 class ConnectionRefusedError(Exception):
     pass
@@ -61,33 +61,28 @@ def get_metrics(socket_path, appname, chunk_size):
     res = json.loads("".join(chunks))
     return res
 
-def filter_metrics(raw_metrics, stateless_metrics, stateful_metrics):
-    global previous_state
+def filter_metrics(appname, raw_metrics, stateless_metrics, stateful_metrics):
     acc = {}
+    current_state = {}
 
     for worker in raw_metrics["workers"]:
-        metrics = {key: worker[key] for key in stateless_metrics}
-        tmp = acc.get(worker["id"], {})
-        acc[worker["id"]] = metrics
+        acc[worker["id"]] = {key: worker[key] for key in stateless_metrics}
 
-    for worker in raw_metrics["workers"]:
-        worker_previous_state = previous_state.get(worker["id"], {})
-        current_state = {}
+        worker_previous_state = previous_state[appname].get(worker["id"], {})
+        current_state[worker["id"]] = {}
         metrics = {}
 
         for key in stateful_metrics:
             current_value = worker[key]
             previous_value = worker_previous_state.get(key, 0)
-            current_state[key] = worker[key]
-            metrics[key] = max(current_value, current_value - previous_value)
 
-        tmp = acc.get(worker["id"], {})
-        if tmp:
-            acc.get(worker["id"]).update(metrics)
-        else:
-            acc[worker["id"]] = metrics
+            if current_value - previous_value >= 0:
+                acc[worker["id"]][key] = current_value - previous_value
+            else:
+                acc[worker["id"]][key] = current_value
+            current_state[worker["id"]][key] = current_value
 
-        previous_state.get(worker["id"], {}).update(current_state)
+    previous_state[appname] = current_state
 
     return acc
 
@@ -140,7 +135,7 @@ def main():
             try:
                 timestamp = time.time()
                 raw_metrics = get_metrics(socket_path, appname, chunk_size)
-                values = filter_metrics(raw_metrics, stateless_metrics, stateful_metrics)
+                values = filter_metrics(appname, raw_metrics, stateless_metrics, stateful_metrics)
                 report_metrics(values, appname, hostname, metrics, timestamp=timestamp)
             except ConnectionRefusedError:
                 pass # silently fail
