@@ -20,6 +20,9 @@ STATEFUL = {"tx": "UWSGI_WORKER_TX", "requests": "UWSGI_WORKER_REQUESTS"}
 
 previous_state = {}
 
+class ConnectionRefusedError(Exception):
+    pass
+
 def parse_params():
     """Parses and returns the contents of the plugin's "param.json" file.
 
@@ -39,7 +42,13 @@ def get_metrics(socket_path, appname, chunk_size):
     path = socket_path.format(appname=appname)
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.settimeout(1.0)
-    sock.connect(path)
+    try:
+        sock.connect(path)
+    except socket.error as e:
+        if e.errno == socket.errno.ECONNREFUSED:
+            raise ConnectionRefusedError()
+        else:
+            raise
 
     chunks = []
     while True:
@@ -47,6 +56,7 @@ def get_metrics(socket_path, appname, chunk_size):
         if not chunk:
             break
         chunks.append(chunk)
+    sock.close()
 
     res = json.loads("".join(chunks))
     return res
@@ -132,6 +142,8 @@ def main():
                 raw_metrics = get_metrics(socket_path, appname, chunk_size)
                 values = filter_metrics(raw_metrics, stateless_metrics, stateful_metrics)
                 report_metrics(values, appname, hostname, metrics, timestamp=timestamp)
+            except ConnectionRefusedError:
+                pass # silently fail
             except:
                 traceback.print_exc(file=sys.stderr)
         time.sleep(poll_interval)
