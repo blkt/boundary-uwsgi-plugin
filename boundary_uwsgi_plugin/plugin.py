@@ -11,12 +11,29 @@ HOSTNAME = socket.getfqdn()
 POLL_INTERVAL = 1000
 DEFAULT_CHUNK_SIZE = 4096
 
+def gen_identity_func(key):
+    def identity(w):
+        return w[key]
+    return identity
+
+def gen_avg_func(sum_key, card_key):
+    def avg(w):
+        if w[card_key] != 0:
+            return w[sum_key] / w[card_key]
+        else:
+            return 0
+    return avg
+
 # We use abstract unix sockets, so the path has to starts with a null
 # byte
 DEFAULT_SOCKET_PATH = "\0/uwsgi/{appname}/stats"
 APPS = ["cap", "cap-internal", "smweb", "smweb2", "vienna"]
-STATELESS = {"rss": "UWSGI_WORKER_RSS", "avg_rt": "UWSGI_WORKER_AVG_RT"}
-STATEFUL = {"tx": "UWSGI_WORKER_TX", "requests": "UWSGI_WORKER_REQUESTS"}
+
+STATELESS = {"UWSGI_WORKER_RSS": gen_identity_func("rss"),
+             "UWSGI_WORKER_AVG_RT": gen_identity_func("avg_rt")}
+STATEFUL = {"UWSGI_WORKER_TX_DELTA": gen_identity_func("tx"),
+            "UWSGI_WORKER_REQUESTS_DELTA": gen_identity_func("requests"),
+            "UWSGI_WORKER_AVG_DELTA_POLL": gen_avg_func("running_time", "requests")}
 
 previous_state = {app: {} for app in APPS}
 
@@ -62,33 +79,38 @@ def get_metrics(socket_path, appname, chunk_size):
     return res
 
 def filter_metrics(appname, raw_metrics, stateless_metrics, stateful_metrics):
+    """
+    "UWSGI_WORKER_RSS": (["rss"], gen_identity_func("rss"))
+
+    """
     acc = {}
     current_state = {}
 
     for worker in raw_metrics["workers"]:
-        acc[worker["id"]] = {key: worker[key] for key in stateless_metrics}
+        iterator = stateless_metrics.iteritems()
+        acc[worker["id"]] = {mname: mfunc(worker) for mname, mfunc in iterator}
 
         worker_previous_state = previous_state[appname].get(worker["id"], {})
         current_state[worker["id"]] = {}
-        metrics = {}
 
-        for key in stateful_metrics:
-            current_value = worker[key]
-            previous_value = worker_previous_state.get(key, 0)
+        for mname, mfunc in stateful_metrics.iteritems():
+            current_value = mfunc(worker)
+            previous_value = worker_previous_state.get(mname, 0)
 
             if current_value - previous_value >= 0:
-                acc[worker["id"]][key] = current_value - previous_value
+                acc[worker["id"]][mname] = current_value - previous_value
             else:
-                acc[worker["id"]][key] = current_value
-            current_state[worker["id"]][key] = current_value
+                acc[worker["id"]][mname] = current_value
+            current_state[worker["id"]][mname] = current_value
 
     previous_state[appname] = current_state
 
     return acc
 
 def report_metrics(values, appname, hostname, metrics, timestamp=None):
-    """Prints the given metrics (pairs of strings and numbers) to standard
-    output appending the hostname and, optionally, the timestamp.
+    """Prints the given metrics (pairs of strings and numbers) to
+    standard output appending the hostname and, optionally, the
+    timestamp.
 
     {1: {'requests': 3, 'tx': 3854},
      2: {'requests': 3, 'tx': 13261},
@@ -101,10 +123,10 @@ def report_metrics(values, appname, hostname, metrics, timestamp=None):
     """
     for wid in values:
         vals = values[wid]
-        for key in vals:
-            val = vals[key]
+        for mname in vals:
+            val = vals[mname]
             source = "%s-w%s@%s" % (appname, wid, hostname)
-            msg = "%s %s %s%s" % (metrics[key], val, source,
+            msg = "%s %s %s%s" % (mname, val, source,
                                   (" %d" % timestamp) if timestamp else "")
             print msg
             sys.stdout.flush()

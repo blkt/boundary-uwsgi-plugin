@@ -407,6 +407,7 @@ SINGLE_WORKER_DATA_JSON = """
     {
       "id":1,
       "requests":9,
+      "running_time":5101223,
       "rss":124600320,
       "tx":684666,
       "avg_rt":1018835
@@ -417,12 +418,30 @@ SINGLE_WORKER_DATA_JSON = """
 
 SINGLE_WORKER_DATA_DICT = json.loads(SINGLE_WORKER_DATA_JSON)
 
+SINGLE_WORKER_INITIAL_STATE_DATA_JSON = """
+{
+  "workers":[
+    {
+      "id":1,
+      "requests":0,
+      "running_time":0,
+      "rss":0,
+      "tx":0,
+      "avg_rt":0
+    }
+  ]
+}
+"""
+
+SINGLE_WORKER_INITIAL_STATE_DATA_DICT = json.loads(SINGLE_WORKER_INITIAL_STATE_DATA_JSON)
+
 MULTIPLE_WORKERS_DATA_JSON = """
 {
   "workers":[
     {
       "id":1,
       "requests":9,
+      "running_time":5101223,
       "rss":124600320,
       "tx":684666,
       "avg_rt":1018835
@@ -430,6 +449,7 @@ MULTIPLE_WORKERS_DATA_JSON = """
     {
       "id":2,
       "requests":8,
+      "running_time":4010220,
       "rss":124608512,
       "tx":355468,
       "avg_rt":865108

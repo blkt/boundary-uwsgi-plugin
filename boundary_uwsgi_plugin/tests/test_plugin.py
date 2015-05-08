@@ -1,7 +1,6 @@
 from StringIO import StringIO
-from mock import patch, call, mock_open, MagicMock
-from nose.tools import (assert_true, assert_equal, assert_items_equal)
-import time as time
+from mock import patch, MagicMock
+from nose.tools import (assert_true, assert_equal)
 
 import boundary_uwsgi_plugin.plugin as plugin
 import fixture
@@ -38,173 +37,272 @@ class TestPlugin(object):
 
     def test_filter_stateless_metric_rss_single_worker(self):
         raw_metrics = fixture.SINGLE_WORKER_DATA_DICT
-        filtered = plugin.filter_metrics("cap", raw_metrics, {"rss": "UWSGI_WORKER_RSS"}, {})
+        tested = {key: plugin.STATELESS[key] for key in ["UWSGI_WORKER_RSS"]}
+        filtered = plugin.filter_metrics("cap", raw_metrics, tested, {})
 
-        assert_equal(filtered, {1: {"rss": 124600320}})
+        assert_equal(filtered, {1: {"UWSGI_WORKER_RSS": 124600320}})
 
     def test_filter_stateless_metric_rss_multiple_workers(self):
         raw_metrics = fixture.MULTIPLE_WORKERS_DATA_DICT
-        filtered = plugin.filter_metrics("cap", raw_metrics, {"rss": "UWSGI_WORKER_RSS"}, {})
+        tested = {key: plugin.STATELESS[key] for key in ["UWSGI_WORKER_RSS"]}
+        filtered = plugin.filter_metrics("cap", raw_metrics, tested, {})
 
-        assert_equal(filtered, {1: {"rss": 124600320}, 2: {"rss": 124608512}})
+        assert_equal(filtered, {1: {"UWSGI_WORKER_RSS": 124600320},
+                                2: {"UWSGI_WORKER_RSS": 124608512}})
 
-    def test_filter_stateless_metric_requests_single_worker(self):
+    def test_filter_stateful_metric_requests_single_worker(self):
         raw_metrics = fixture.SINGLE_WORKER_DATA_DICT
-        filtered = plugin.filter_metrics("cap", raw_metrics, {"requests": "UWSGI_WORKER_REQUESTS"}, {})
+        tested = {key: plugin.STATEFUL[key] for key in ["UWSGI_WORKER_REQUESTS_DELTA"]}
+        filtered = plugin.filter_metrics("cap", raw_metrics, tested, {})
 
-        assert_equal(filtered, {1: {"requests": 9}})
+        assert_equal(filtered, {1: {"UWSGI_WORKER_REQUESTS_DELTA": 9}})
 
-    def test_filter_stateless_metric_requests_multiple_workers(self):
+    def test_filter_stateful_metric_requests_multiple_workers(self):
         raw_metrics = fixture.MULTIPLE_WORKERS_DATA_DICT
-        filtered = plugin.filter_metrics("cap", raw_metrics, {"requests": "UWSGI_WORKER_REQUESTS"}, {})
+        tested = {key: plugin.STATEFUL[key] for key in ["UWSGI_WORKER_REQUESTS_DELTA"]}
+        filtered = plugin.filter_metrics("cap", raw_metrics, tested, {})
 
-        assert_equal(filtered, {1: {"requests": 9}, 2: {"requests": 8}})
-
-    def test_filter_stateless_metric_tx_single_worker(self):
-        raw_metrics = fixture.SINGLE_WORKER_DATA_DICT
-        filtered = plugin.filter_metrics("cap", raw_metrics, {"tx": "UWSGI_WORKER_TX"}, {})
-
-        assert_equal(filtered, {1: {"tx": 684666}})
-
-    def test_filter_stateless_metric_tx_multiple_workers(self):
-        raw_metrics = fixture.MULTIPLE_WORKERS_DATA_DICT
-        filtered = plugin.filter_metrics("cap", raw_metrics, {"tx": "UWSGI_WORKER_TX"}, {})
-
-        assert_equal(filtered, {1: {"tx": 684666}, 2: {"tx": 355468}})
-
-    def test_filter_stateless_metric_avg_rt_single_worker(self):
-        raw_metrics = fixture.SINGLE_WORKER_DATA_DICT
-        filtered = plugin.filter_metrics("cap", raw_metrics, {"avg_rt": "UWSGI_WORKER_AVG_RT"}, {})
-
-        assert_equal(filtered, {1: {"avg_rt": 1018835}})
-
-    def test_filter_stateless_metric_avg_rt_multiple_workers(self):
-        raw_metrics = fixture.MULTIPLE_WORKERS_DATA_DICT
-        filtered = plugin.filter_metrics("cap", raw_metrics, {"avg_rt": "UWSGI_WORKER_AVG_RT"}, {})
-
-        assert_equal(filtered, {1: {"avg_rt": 1018835}, 2: {"avg_rt": 865108}})
-
-    def test_filter_stateless_metrics_single_worker(self):
-        raw_metrics = fixture.SINGLE_WORKER_DATA_DICT
-        stateless = {"rss": "UWSGI_WORKER_RSS", "avg_rt": "UWSGI_WORKER_AVG_RT"}
-        stateful = {"tx": "UWSGI_WORKER_TX", "requests": "UWSGI_WORKER_REQUESTS"}
-        filtered = plugin.filter_metrics("cap", raw_metrics, stateless, stateful)
-
-        assert_equal(filtered, {1: {"rss": 124600320,"avg_rt": 1018835,
-                                     "requests": 9, "tx": 684666}})
-
-    def test_filter_stateless_metrics_multiple_workers(self):
-        raw_metrics = fixture.MULTIPLE_WORKERS_DATA_DICT
-        stateless = {"rss": "UWSGI_WORKER_RSS", "avg_rt": "UWSGI_WORKER_AVG_RT"}
-        stateful = {"tx": "UWSGI_WORKER_TX", "requests": "UWSGI_WORKER_REQUESTS"}
-        filtered = plugin.filter_metrics("cap", raw_metrics, stateless, stateful)
-
-        assert_equal(filtered, {1: {"rss": 124600320,"avg_rt": 1018835,
-                                     "requests": 9, "tx": 684666},
-                                 2: {"rss": 124608512,"avg_rt": 865108,
-                                     "requests":8, "tx":355468}})
+        assert_equal(filtered, {1: {"UWSGI_WORKER_REQUESTS_DELTA": 9},
+                                2: {"UWSGI_WORKER_REQUESTS_DELTA": 8}})
 
     def test_filter_stateful_metric_tx_single_worker(self):
         raw_metrics = fixture.SINGLE_WORKER_DATA_DICT
-        stateless = {}
-        stateful = {"tx": "UWSGI_WORKER_TX"}
-        first = plugin.filter_metrics("cap", raw_metrics, stateless, stateful)
+        tested = {key: plugin.STATEFUL[key] for key in ["UWSGI_WORKER_TX_DELTA"]}
+        filtered = plugin.filter_metrics("cap", raw_metrics, tested, {})
 
-        assert_equal(first, {1: {"tx": 684666}})
-
-        second = plugin.filter_metrics("cap", raw_metrics, stateless, stateful)
-
-        assert_equal(second, {1: {"tx": 0}})
+        assert_equal(filtered, {1: {"UWSGI_WORKER_TX_DELTA": 684666}})
 
     def test_filter_stateful_metric_tx_multiple_workers(self):
         raw_metrics = fixture.MULTIPLE_WORKERS_DATA_DICT
-        stateless = {}
-        stateful = {"tx": "UWSGI_WORKER_TX"}
-        first = plugin.filter_metrics("cap", raw_metrics, stateless, stateful)
+        tested = {key: plugin.STATEFUL[key] for key in ["UWSGI_WORKER_TX_DELTA"]}
+        filtered = plugin.filter_metrics("cap", raw_metrics, tested, {})
 
-        assert_equal(first, {1: {"tx": 684666}, 2: {"tx":355468}})
+        assert_equal(filtered, {1: {"UWSGI_WORKER_TX_DELTA": 684666},
+                                2: {"UWSGI_WORKER_TX_DELTA": 355468}})
 
-        second = plugin.filter_metrics("cap", raw_metrics, stateless, stateful)
+    def test_filter_stateless_metric_avg_rt_single_worker(self):
+        raw_metrics = fixture.SINGLE_WORKER_DATA_DICT
+        tested = {key: plugin.STATELESS[key] for key in ["UWSGI_WORKER_AVG_RT"]}
+        filtered = plugin.filter_metrics("cap", raw_metrics, tested, {})
 
-        assert_equal(second, {1: {"tx": 0}, 2: {"tx": 0}})
+        assert_equal(filtered, {1: {"UWSGI_WORKER_AVG_RT": 1018835}})
+
+    def test_filter_stateless_metric_avg_rt_multiple_workers(self):
+        raw_metrics = fixture.MULTIPLE_WORKERS_DATA_DICT
+        tested = {key: plugin.STATELESS[key] for key in ["UWSGI_WORKER_AVG_RT"]}
+        filtered = plugin.filter_metrics("cap", raw_metrics, tested, {})
+
+        assert_equal(filtered, {1: {"UWSGI_WORKER_AVG_RT": 1018835},
+                                2: {"UWSGI_WORKER_AVG_RT": 865108}})
+
+    def test_filter_metrics_single_worker(self):
+        raw_metrics = fixture.SINGLE_WORKER_DATA_DICT
+        tested_stateless = {key: plugin.STATELESS[key]
+                            for key in ["UWSGI_WORKER_RSS", "UWSGI_WORKER_AVG_RT"]}
+        tested_stateful = {key: plugin.STATEFUL[key]
+                           for key in ["UWSGI_WORKER_TX_DELTA", "UWSGI_WORKER_REQUESTS_DELTA"]}
+        filtered = plugin.filter_metrics("cap", raw_metrics, tested_stateless, tested_stateful)
+
+        assert_equal(filtered, {1: {"UWSGI_WORKER_RSS": 124600320,
+                                    "UWSGI_WORKER_AVG_RT": 1018835,
+                                    "UWSGI_WORKER_REQUESTS_DELTA": 9,
+                                    "UWSGI_WORKER_TX_DELTA": 684666}})
+
+    def test_filter_metrics_multiple_workers(self):
+        raw_metrics = fixture.MULTIPLE_WORKERS_DATA_DICT
+        tested_stateless = {key: plugin.STATELESS[key]
+                            for key in ["UWSGI_WORKER_RSS", "UWSGI_WORKER_AVG_RT"]}
+        tested_stateful = {key: plugin.STATEFUL[key]
+                           for key in ["UWSGI_WORKER_TX_DELTA", "UWSGI_WORKER_REQUESTS_DELTA"]}
+        filtered = plugin.filter_metrics("cap", raw_metrics, tested_stateless, tested_stateful)
+
+        assert_equal(filtered, {1: {"UWSGI_WORKER_RSS": 124600320,
+                                    "UWSGI_WORKER_AVG_RT": 1018835,
+                                     "UWSGI_WORKER_REQUESTS_DELTA": 9,
+                                    "UWSGI_WORKER_TX_DELTA": 684666},
+                                 2: {"UWSGI_WORKER_RSS": 124608512,
+                                     "UWSGI_WORKER_AVG_RT": 865108,
+                                     "UWSGI_WORKER_REQUESTS_DELTA":8,
+                                     "UWSGI_WORKER_TX_DELTA":355468}})
+
+    def test_filter_stateful_metric_delta_tx_single_worker(self):
+        raw_metrics = fixture.SINGLE_WORKER_DATA_DICT
+        tested = {key: plugin.STATEFUL[key] for key in ["UWSGI_WORKER_TX_DELTA"]}
+        first = plugin.filter_metrics("cap", raw_metrics, {}, tested)
+
+        assert_equal(first, {1: {"UWSGI_WORKER_TX_DELTA": 684666}})
+
+        second = plugin.filter_metrics("cap", raw_metrics, {}, tested)
+
+        assert_equal(second, {1: {"UWSGI_WORKER_TX_DELTA": 0}})
+
+    def test_filter_stateful_metric_delta_tx_multiple_workers(self):
+        raw_metrics = fixture.MULTIPLE_WORKERS_DATA_DICT
+        tested = {key: plugin.STATEFUL[key] for key in ["UWSGI_WORKER_TX_DELTA"]}
+        first = plugin.filter_metrics("cap", raw_metrics, {}, tested)
+
+        assert_equal(first, {1: {"UWSGI_WORKER_TX_DELTA": 684666},
+                             2: {"UWSGI_WORKER_TX_DELTA":355468}})
+
+        second = plugin.filter_metrics("cap", raw_metrics, {}, tested)
+
+        assert_equal(second, {1: {"UWSGI_WORKER_TX_DELTA": 0},
+                              2: {"UWSGI_WORKER_TX_DELTA": 0}})
+
+    def test_filter_complex_stateful_metric_delta_mean_single_worker(self):
+        raw_metrics = fixture.SINGLE_WORKER_DATA_DICT
+        tested = {key: plugin.STATEFUL[key] for key in ["UWSGI_WORKER_AVG_DELTA_POLL"]}
+        first = plugin.filter_metrics("cap", raw_metrics, {}, tested)
+
+        assert_equal(first, {1: {"UWSGI_WORKER_AVG_DELTA_POLL": 5101223 / 9}})
+
+        second = plugin.filter_metrics("cap", raw_metrics, {}, tested)
+
+        assert_equal(second, {1: {"UWSGI_WORKER_AVG_DELTA_POLL": 0}})
+
+    def test_filter_complex_stateful_metric_delta_mean_single_worker_zero_division(self):
+        raw_metrics = fixture.SINGLE_WORKER_INITIAL_STATE_DATA_DICT
+        tested = {key: plugin.STATEFUL[key] for key in ["UWSGI_WORKER_AVG_DELTA_POLL"]}
+        first = plugin.filter_metrics("cap", raw_metrics, {}, tested)
+
+        assert_equal(first, {1: {"UWSGI_WORKER_AVG_DELTA_POLL": 0}})
+
+        second = plugin.filter_metrics("cap", raw_metrics, {}, tested)
+
+        assert_equal(second, {1: {"UWSGI_WORKER_AVG_DELTA_POLL": 0}})
+
+    def test_filter_complex_stateful_metric_delta_mean_multiple_workers(self):
+        raw_metrics = fixture.MULTIPLE_WORKERS_DATA_DICT
+        tested = {key: plugin.STATEFUL[key] for key in ["UWSGI_WORKER_AVG_DELTA_POLL"]}
+        first = plugin.filter_metrics("cap", raw_metrics, {}, tested)
+
+        assert_equal(first, {1: {"UWSGI_WORKER_AVG_DELTA_POLL": 5101223 / 9},
+                             2: {"UWSGI_WORKER_AVG_DELTA_POLL": 4010220 / 8}})
+
+        second = plugin.filter_metrics("cap", raw_metrics, {}, tested)
+
+        assert_equal(second, {1: {"UWSGI_WORKER_AVG_DELTA_POLL": 0},
+                              2: {"UWSGI_WORKER_AVG_DELTA_POLL": 0}})
 
     def test_report_metrics_single_worker_no_values(self):
         values = {}
         appname = "app"
         hostname = "hostname"
-        metrics = {"rss": "UWSGI_WORKER_RSS", "avg_rt": "UWSGI_WORKER_AVG_RT",
-                   "tx": "UWSGI_WORKER_TX", "requests": "UWSGI_WORKER_REQUESTS"}
+        tested = {key: plugin.STATEFUL[key]
+                  for key in ["UWSGI_WORKER_TX_DELTA", "UWSGI_WORKER_REQUESTS_DELTA"]}
+        tested.update({key: plugin.STATELESS[key]
+                       for key in ["UWSGI_WORKER_RSS", "UWSGI_WORKER_AVG_RT"]})
         timestamp = 1234567890
         expected = ""
 
         with patch("sys.stdout", new=StringIO()) as fake_out:
             plugin.report_metrics(values, appname, hostname,
-                                  metrics, timestamp)
+                                  tested, timestamp)
 
         assert_equal(fake_out.getvalue(), expected)
 
     def test_report_metrics_single_worker_single_value(self):
-        values = {1: {"requests": 3}}
+        values = {1: {"UWSGI_WORKER_REQUESTS_DELTA": 3}}
         appname = "app"
         hostname = "hostname"
-        metrics = {"rss": "UWSGI_WORKER_RSS", "avg_rt": "UWSGI_WORKER_AVG_RT",
-                   "tx": "UWSGI_WORKER_TX", "requests": "UWSGI_WORKER_REQUESTS"}
+        tested = {key: plugin.STATEFUL[key]
+                  for key in ["UWSGI_WORKER_TX_DELTA", "UWSGI_WORKER_REQUESTS_DELTA"]}
+        tested.update({key: plugin.STATELESS[key]
+                       for key in ["UWSGI_WORKER_RSS", "UWSGI_WORKER_AVG_RT"]})
         timestamp = 1234567890
-        expected = "UWSGI_WORKER_REQUESTS 3 app-w1@hostname 1234567890\n"
+        expected = "UWSGI_WORKER_REQUESTS_DELTA 3 app-w1@hostname 1234567890\n"
 
         with patch("sys.stdout", new=StringIO()) as fake_out:
             plugin.report_metrics(values, appname, hostname,
-                                  metrics, timestamp)
+                                  tested, timestamp)
 
         assert_equal(fake_out.getvalue(), expected)
 
     def test_report_metrics_single_worker_multiple_values(self):
-        values = {1: {"requests": 3, "tx": 3854}}
+        values = {1: {"UWSGI_WORKER_REQUESTS_DELTA": 3,
+                      "UWSGI_WORKER_TX_DELTA": 3854}}
         appname = "app"
         hostname = "hostname"
-        metrics = {"rss": "UWSGI_WORKER_RSS", "avg_rt": "UWSGI_WORKER_AVG_RT",
-                   "tx": "UWSGI_WORKER_TX", "requests": "UWSGI_WORKER_REQUESTS"}
+        tested = {key: plugin.STATEFUL[key]
+                  for key in ["UWSGI_WORKER_TX_DELTA", "UWSGI_WORKER_REQUESTS_DELTA"]}
+        tested.update({key: plugin.STATELESS[key]
+                       for key in ["UWSGI_WORKER_RSS", "UWSGI_WORKER_AVG_RT"]})
         timestamp = 1234567890
-        expected = "UWSGI_WORKER_REQUESTS 3 app-w1@hostname 1234567890\n"
-        expected += "UWSGI_WORKER_TX 3854 app-w1@hostname 1234567890\n"
+        expected = "UWSGI_WORKER_REQUESTS_DELTA 3 app-w1@hostname 1234567890\n"
+        expected += "UWSGI_WORKER_TX_DELTA 3854 app-w1@hostname 1234567890\n"
 
         with patch("sys.stdout", new=StringIO()) as fake_out:
             plugin.report_metrics(values, appname, hostname,
-                                  metrics, timestamp)
+                                  tested, timestamp)
 
         assert_equal(fake_out.getvalue(), expected)
 
     def test_report_metrics_multiple_workers_single_value(self):
-        values = {1: {"requests": 3}, 2: {'requests': 3}}
+        values = {1: {"UWSGI_WORKER_REQUESTS_DELTA": 3},
+                  2: {"UWSGI_WORKER_REQUESTS_DELTA": 3}}
         appname = "app"
         hostname = "hostname"
-        metrics = {"rss": "UWSGI_WORKER_RSS", "avg_rt": "UWSGI_WORKER_AVG_RT",
-                   "tx": "UWSGI_WORKER_TX", "requests": "UWSGI_WORKER_REQUESTS"}
+        tested = {key: plugin.STATEFUL[key]
+                  for key in ["UWSGI_WORKER_TX_DELTA", "UWSGI_WORKER_REQUESTS_DELTA"]}
+        tested.update({key: plugin.STATELESS[key]
+                       for key in ["UWSGI_WORKER_RSS", "UWSGI_WORKER_AVG_RT"]})
         timestamp = 1234567890
-        expected = "UWSGI_WORKER_REQUESTS 3 app-w1@hostname 1234567890\n"
-        expected += "UWSGI_WORKER_REQUESTS 3 app-w2@hostname 1234567890\n"
+        expected = "UWSGI_WORKER_REQUESTS_DELTA 3 app-w1@hostname 1234567890\n"
+        expected += "UWSGI_WORKER_REQUESTS_DELTA 3 app-w2@hostname 1234567890\n"
 
         with patch("sys.stdout", new=StringIO()) as fake_out:
             plugin.report_metrics(values, appname, hostname,
-                                  metrics, timestamp)
+                                  tested, timestamp)
 
         assert_equal(fake_out.getvalue(), expected)
 
     def test_report_metrics_multiple_workers_multiple_values(self):
-        values = {1: {"requests": 3, "tx": 3854}, 2: {'requests': 3, 'tx': 13261}}
+        values = {1: {"UWSGI_WORKER_REQUESTS_DELTA": 3,
+                      "UWSGI_WORKER_TX_DELTA": 3854},
+                  2: {"UWSGI_WORKER_REQUESTS_DELTA": 3,
+                      "UWSGI_WORKER_TX_DELTA": 13261}}
         appname = "app"
         hostname = "hostname"
-        metrics = {"rss": "UWSGI_WORKER_RSS", "avg_rt": "UWSGI_WORKER_AVG_RT",
-                   "tx": "UWSGI_WORKER_TX", "requests": "UWSGI_WORKER_REQUESTS"}
+        tested = {key: plugin.STATEFUL[key]
+                  for key in ["UWSGI_WORKER_TX_DELTA", "UWSGI_WORKER_REQUESTS_DELTA"]}
+        tested.update({key: plugin.STATELESS[key]
+                       for key in ["UWSGI_WORKER_RSS", "UWSGI_WORKER_AVG_RT"]})
         timestamp = 1234567890
-        expected = "UWSGI_WORKER_REQUESTS 3 app-w1@hostname 1234567890\n"
-        expected += "UWSGI_WORKER_TX 3854 app-w1@hostname 1234567890\n"
-        expected += "UWSGI_WORKER_REQUESTS 3 app-w2@hostname 1234567890\n"
-        expected += "UWSGI_WORKER_TX 13261 app-w2@hostname 1234567890\n"
+        expected = "UWSGI_WORKER_REQUESTS_DELTA 3 app-w1@hostname 1234567890\n"
+        expected += "UWSGI_WORKER_TX_DELTA 3854 app-w1@hostname 1234567890\n"
+        expected += "UWSGI_WORKER_REQUESTS_DELTA 3 app-w2@hostname 1234567890\n"
+        expected += "UWSGI_WORKER_TX_DELTA 13261 app-w2@hostname 1234567890\n"
 
         with patch("sys.stdout", new=StringIO()) as fake_out:
             plugin.report_metrics(values, appname, hostname,
-                                  metrics, timestamp)
+                                  tested, timestamp)
+
+        assert_equal(fake_out.getvalue(), expected)
+
+    def test_report_metrics_multiple_workers_multiple_values(self):
+        values = {1: {"UWSGI_WORKER_REQUESTS_DELTA": 3,
+                      "UWSGI_WORKER_TX_DELTA": 3854,
+                      "UWSGI_WORKER_AVG_DELTA_POLL": 0},
+                  2: {"UWSGI_WORKER_REQUESTS_DELTA": 3,
+                      "UWSGI_WORKER_TX_DELTA": 13261,
+                      "UWSGI_WORKER_AVG_DELTA_POLL": 1}}
+        appname = "app"
+        hostname = "hostname"
+        tested = {key: plugin.STATEFUL[key]
+                  for key in ["UWSGI_WORKER_TX_DELTA", "UWSGI_WORKER_REQUESTS_DELTA"]}
+        tested.update({key: plugin.STATELESS[key]
+                       for key in ["UWSGI_WORKER_RSS", "UWSGI_WORKER_AVG_RT"]})
+        timestamp = 1234567890
+        expected = "UWSGI_WORKER_REQUESTS_DELTA 3 app-w1@hostname 1234567890\n"
+        expected += "UWSGI_WORKER_TX_DELTA 3854 app-w1@hostname 1234567890\n"
+        expected += "UWSGI_WORKER_AVG_DELTA_POLL 0 app-w1@hostname 1234567890\n"
+        expected += "UWSGI_WORKER_REQUESTS_DELTA 3 app-w2@hostname 1234567890\n"
+        expected += "UWSGI_WORKER_TX_DELTA 13261 app-w2@hostname 1234567890\n"
+        expected += "UWSGI_WORKER_AVG_DELTA_POLL 1 app-w2@hostname 1234567890\n"
+
+        with patch("sys.stdout", new=StringIO()) as fake_out:
+            plugin.report_metrics(values, appname, hostname,
+                                  tested, timestamp)
 
         assert_equal(fake_out.getvalue(), expected)
 
