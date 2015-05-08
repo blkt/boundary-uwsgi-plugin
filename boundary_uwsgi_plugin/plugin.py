@@ -16,10 +16,10 @@ def gen_identity_func(key):
         return w[key]
     return identity
 
-def gen_avg_func(sum_key, card_key):
+def gen_avg_millis_func(sum_key, card_key):
     def avg(w):
         if w[card_key] != 0:
-            return w[sum_key] / w[card_key]
+            return (w[sum_key] / 1000000.0) / w[card_key]
         else:
             return 0
     return avg
@@ -32,7 +32,7 @@ APPS = ["cap", "cap-internal", "smweb", "smweb2", "vienna"]
 STATELESS = {"UWSGI_WORKER_RSS": gen_identity_func("rss")}
 STATEFUL = {"UWSGI_WORKER_TX_DELTA": gen_identity_func("tx"),
             "UWSGI_WORKER_REQUESTS_DELTA": gen_identity_func("requests"),
-            "UWSGI_WORKER_AVG_RT_DELTA_POLL": gen_avg_func("running_time", "requests")}
+            "UWSGI_WORKER_AVG_RT_DELTA_POLL": gen_avg_millis_func("running_time", "requests")}
 
 previous_state = {app: {} for app in APPS}
 

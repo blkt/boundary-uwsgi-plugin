@@ -134,7 +134,7 @@ class TestPlugin(object):
         tested = {key: plugin.STATEFUL[key] for key in ["UWSGI_WORKER_AVG_RT_DELTA_POLL"]}
         first = plugin.filter_metrics("cap", raw_metrics, {}, tested)
 
-        assert_equal(first, {1: {"UWSGI_WORKER_AVG_RT_DELTA_POLL": 5101223 / 9}})
+        assert_equal(first, {1: {"UWSGI_WORKER_AVG_RT_DELTA_POLL": (5101223 / 1000000.0) / 9}})
 
         second = plugin.filter_metrics("cap", raw_metrics, {}, tested)
 
@@ -156,8 +156,8 @@ class TestPlugin(object):
         tested = {key: plugin.STATEFUL[key] for key in ["UWSGI_WORKER_AVG_RT_DELTA_POLL"]}
         first = plugin.filter_metrics("cap", raw_metrics, {}, tested)
 
-        assert_equal(first, {1: {"UWSGI_WORKER_AVG_RT_DELTA_POLL": 5101223 / 9},
-                             2: {"UWSGI_WORKER_AVG_RT_DELTA_POLL": 4010220 / 8}})
+        assert_equal(first, {1: {"UWSGI_WORKER_AVG_RT_DELTA_POLL": (5101223 / 1000000.0) / 9},
+                             2: {"UWSGI_WORKER_AVG_RT_DELTA_POLL": (4010220 / 1000000.0) / 8}})
 
         second = plugin.filter_metrics("cap", raw_metrics, {}, tested)
 
