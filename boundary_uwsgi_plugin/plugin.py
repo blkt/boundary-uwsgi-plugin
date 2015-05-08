@@ -29,11 +29,10 @@ def gen_avg_func(sum_key, card_key):
 DEFAULT_SOCKET_PATH = "\0/uwsgi/{appname}/stats"
 APPS = ["cap", "cap-internal", "smweb", "smweb2", "vienna"]
 
-STATELESS = {"UWSGI_WORKER_RSS": gen_identity_func("rss"),
-             "UWSGI_WORKER_AVG_RT": gen_identity_func("avg_rt")}
+STATELESS = {"UWSGI_WORKER_RSS": gen_identity_func("rss")}
 STATEFUL = {"UWSGI_WORKER_TX_DELTA": gen_identity_func("tx"),
             "UWSGI_WORKER_REQUESTS_DELTA": gen_identity_func("requests"),
-            "UWSGI_WORKER_AVG_DELTA_POLL": gen_avg_func("running_time", "requests")}
+            "UWSGI_WORKER_AVG_RT_DELTA_POLL": gen_avg_func("running_time", "requests")}
 
 previous_state = {app: {} for app in APPS}
 
