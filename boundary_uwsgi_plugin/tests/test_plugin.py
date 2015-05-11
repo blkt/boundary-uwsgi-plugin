@@ -143,6 +143,17 @@ class TestPlugin(object):
 
         assert_equal(second, {"UWSGI_WORKER_AVG_RT_DELTA_POLL": 0})
 
+    def test_filter_complex_stateful_metric_delta_mean_single_worker_zero_division(self):
+        raw_metrics = fixture.SINGLE_WORKER_INITIAL_STATE_DATA_DICT
+        tested = {key: plugin.METRICS[key] for key in ["UWSGI_WORKER_AVG_RT_DELTA_POLL"]}
+        first = plugin.filter_metrics("cap", raw_metrics, tested)
+
+        assert_equal(first, {"UWSGI_WORKER_AVG_RT_DELTA_POLL": 0})
+
+        second = plugin.filter_metrics("cap", raw_metrics, tested)
+
+        assert_equal(second, {"UWSGI_WORKER_AVG_RT_DELTA_POLL": 0})
+
     def test_filter_complex_stateful_metric_delta_mean_multiple_workers(self):
         raw_metrics = fixture.MULTIPLE_WORKERS_DATA_DICT
         tested = {key: plugin.METRICS[key] for key in ["UWSGI_WORKER_AVG_RT_DELTA_POLL"]}
