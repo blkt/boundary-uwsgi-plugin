@@ -74,7 +74,7 @@ class gen_avg_millis_func(object):
         self.prev_card_val = curr_card_val
 
         if delta_card_val != 0:
-            res = (delta_sum_val / 1000000.0) / delta_card_val
+            res = (delta_sum_val / 1000.0) / delta_card_val
             self.previous_value = res
             return res
         else:

@@ -126,11 +126,11 @@ class TestPlugin(object):
         tested = {key: plugin.METRICS[key] for key in ["UWSGI_WORKER_AVG_RT_DELTA_POLL"]}
         first = plugin.filter_metrics("cap", raw_metrics, tested)
 
-        assert_equal(first, {"UWSGI_WORKER_AVG_RT_DELTA_POLL": (5101223 / 1000000.0) / 9})
+        assert_equal(first, {"UWSGI_WORKER_AVG_RT_DELTA_POLL": (5101223 / 1000.0) / 9})
 
         second = plugin.filter_metrics("cap", raw_metrics, tested)
 
-        assert_equal(second, {"UWSGI_WORKER_AVG_RT_DELTA_POLL": (5101223 / 1000000.0) / 9})
+        assert_equal(second, {"UWSGI_WORKER_AVG_RT_DELTA_POLL": (5101223 / 1000.0) / 9})
 
     def test_filter_complex_stateful_metric_delta_mean_single_worker_zero_division(self):
         raw_metrics = fixture.SINGLE_WORKER_INITIAL_STATE_DATA_DICT
@@ -164,12 +164,12 @@ class TestPlugin(object):
         first = plugin.filter_metrics("cap", raw_metrics, tested)
 
         assert_equal(first, {"UWSGI_WORKER_AVG_RT_DELTA_POLL":
-                             ((5101223 + 4010220) / 1000000.0) / (9 + 8)})
+                             ((5101223 + 4010220) / 1000.0) / (9 + 8)})
 
         second = plugin.filter_metrics("cap", raw_metrics, tested)
 
         assert_equal(second, {"UWSGI_WORKER_AVG_RT_DELTA_POLL":
-                              ((5101223 + 4010220) / 1000000.0) / (9 + 8)})
+                              ((5101223 + 4010220) / 1000.0) / (9 + 8)})
 
     def test_report_metrics_single_worker_no_values(self):
         values = {}
