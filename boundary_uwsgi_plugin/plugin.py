@@ -47,7 +47,7 @@ class gen_delta_identity_func(object):
             current_value += w[self.key]
 
         res = current_value - self.previous_value
-        self.previous_value = res
+        self.previous_value = current_value
         return res
 
 class gen_avg_millis_func(object):
