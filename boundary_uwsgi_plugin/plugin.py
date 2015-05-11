@@ -13,10 +13,9 @@ DEFAULT_CHUNK_SIZE = 4096
 
 class gen_dispatcher_on(object):
 
-    def __init__(self, keys, func):
+    def __init__(self, keys, func, *args):
         self.keys = keys
-        self.func = func
-        self.func_set = {key: func for key in keys}
+        self.func_set = {key: func(*args) for key in keys}
 
     def __call__(self, key):
         return self.func_set[key]
@@ -82,10 +81,14 @@ class gen_avg_millis_func(object):
             return self.previous_value
 
 def init_metrics():
-    return {"UWSGI_WORKER_RSS": gen_dispatcher_on(APPS, gen_identity_func("rss")),
-            "UWSGI_WORKER_TX_DELTA": gen_dispatcher_on(APPS, gen_delta_identity_func("tx")),
-            "UWSGI_WORKER_REQUESTS_DELTA": gen_dispatcher_on(APPS, gen_delta_identity_func("requests")),
-            "UWSGI_WORKER_AVG_RT_DELTA_POLL": gen_dispatcher_on(APPS, gen_avg_millis_func("running_time", "requests"))}
+    return {"UWSGI_WORKER_RSS":
+            gen_dispatcher_on(APPS, gen_identity_func, "rss"),
+            "UWSGI_WORKER_TX_DELTA":
+            gen_dispatcher_on(APPS, gen_delta_identity_func, "tx"),
+            "UWSGI_WORKER_REQUESTS_DELTA":
+            gen_dispatcher_on(APPS, gen_delta_identity_func, "requests"),
+            "UWSGI_WORKER_AVG_RT_DELTA_POLL":
+            gen_dispatcher_on(APPS, gen_avg_millis_func, "running_time", "requests")}
 
 # We use abstract unix sockets, so the path has to starts with a null
 # byte
