@@ -70,8 +70,8 @@ class gen_avg_millis_func(object):
 
         delta_sum_val = curr_sum_val - self.prev_sum_val
         delta_card_val = curr_card_val - self.prev_card_val
-        self.previous_sum_val = curr_sum_val
-        self.previous_card_val = curr_card_val
+        self.prev_sum_val = curr_sum_val
+        self.prev_card_val = curr_card_val
 
         if delta_card_val != 0:
             res = (delta_sum_val / 1000000.0) / delta_card_val
